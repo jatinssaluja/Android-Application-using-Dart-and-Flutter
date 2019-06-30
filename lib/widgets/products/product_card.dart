@@ -30,37 +30,33 @@ class ProductCard extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return ScopedModelDescendant<MainScopedModel>(builder: (
-          BuildContext context,Widget child, 
-          MainScopedModel model){
-                  return ButtonBar(
-      alignment: MainAxisAlignment.center,
-      children: <Widget>[
-        IconButton(
-          icon: Icon(Icons.info),
-          color: Theme.of(context).accentColor,
-          onPressed: () => Navigator.pushNamed<bool>(
-              context, '/product/' + model.allProducts[productIndex].id),
-        ),
-         IconButton(
-          icon: Icon(model.allProducts[productIndex].isFavorite ?
-          Icons.favorite: Icons.favorite_border),
-          color: Colors.red,
-          onPressed: (){
-
-            model.selectProduct(model.allProducts[productIndex].id);
-            model.toggleProductFavorite();
-
-          },
-        
-          
-        )
-          
-      ],
-    );
-
-    }
-    );
+    return ScopedModelDescendant<MainScopedModel>(
+        builder: (BuildContext context, Widget child, MainScopedModel model) {
+      return ButtonBar(
+        alignment: MainAxisAlignment.center,
+        children: <Widget>[
+          IconButton(
+            icon: Icon(Icons.info),
+            color: Theme.of(context).accentColor,
+            onPressed: () => Navigator.pushNamed<bool>(context,
+                        '/product/' + model.allProducts[productIndex].id)
+                    .then((res) {
+                  model.resetSelectedProductId();
+                }),
+          ),
+          IconButton(
+            icon: Icon(model.allProducts[productIndex].isFavorite
+                ? Icons.favorite
+                : Icons.favorite_border),
+            color: Colors.red,
+            onPressed: () {
+              model.selectProduct(model.allProducts[productIndex].id);
+              model.toggleProductFavorite();
+            },
+          )
+        ],
+      );
+    });
   }
 
   @override
@@ -68,10 +64,12 @@ class ProductCard extends StatelessWidget {
     return Card(
       child: Column(
         children: <Widget>[
-          FadeInImage(image: NetworkImage(product.image),
-          height: 300.0,
-          fit: BoxFit.cover,
-          placeholder: AssetImage('assets/food.jpg'),),
+          FadeInImage(
+            image: NetworkImage(product.image),
+            height: 300.0,
+            fit: BoxFit.cover,
+            placeholder: AssetImage('assets/food.jpg'),
+          ),
           _buildTitlePriceRow(),
           Text(product.userEmail),
           AddressTag('Union Square, San Francisco'),

@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
+import '../services/easy_list_api_service.dart';
 
 mixin ConnectedUserProductScopedModel on Model {
   List<ProductModel> _products = [];
@@ -75,123 +76,68 @@ mixin ProductScopedModel on ConnectedUserProductScopedModel {
     _selProductId = null;
   }
 
-  Future<Null> fetchProducts() {
+  Future<Null> fetchProducts() async {
     _isLoading = true;
     notifyListeners();
-    return http
-        .get('https://flutter-products-1683f.firebaseio.com/products.json')
-        .then((http.Response response) {
-      _isLoading = false;
-      final Map<String, dynamic> productListData = json.decode(response.body);
 
-      final List<ProductModel> fetchedProductList = [];
+    EasyListApiService easyListApiService = new EasyListApiService();
 
-      if (productListData != null) {
-        productListData.forEach((String productId, dynamic productData) {
-          final ProductModel productModel = ProductModel(
-              id: productId,
-              title: productData['title'],
-              description: productData['description'],
-              image: productData['image'],
-              price: productData['price'],
-              userEmail: productData['userEmail'],
-              userId: productData['userId']);
-
-          fetchedProductList.add(productModel);
-        });
-
-        _products = fetchedProductList;
-      }
-
-      notifyListeners();
-    });
+    _products = await easyListApiService.fetchProducts();
+    _isLoading = false;
+    notifyListeners();
   }
 
   Future<Null> addProduct(
-      String title, String description, String image, double price) {
+      String title, String description, String image, double price) async {
     _isLoading = true;
     notifyListeners();
-    final Map<String, dynamic> productData = {
-      'title': title,
-      'description': description,
-      'image':
-          'https://image.shutterstock.com/image-photo/milk-chocolate-pieces-isolated-on-260nw-728366752.jpg',
-      'price': price,
-      'userEmail': _authenticatedUser.email,
-      'userId': _authenticatedUser.id
-    };
 
-    return http
-        .post('https://flutter-products-1683f.firebaseio.com/products.json',
-            body: json.encode(productData))
-        .then((http.Response response) {
-      _isLoading = false;
-      final Map<String, dynamic> responseData = json.decode(response.body);
+    EasyListApiService easyListApiService = new EasyListApiService();
 
-      final ProductModel product = ProductModel(
-          id: responseData['name'],
-          title: title,
-          description: description,
-          image: image,
-          price: price,
-          userEmail: _authenticatedUser.email,
-          userId: _authenticatedUser.id);
+    final ProductModel product = await easyListApiService.addProduct(
+        title,
+        description,
+        image,
+        price,
+        _authenticatedUser.email,
+        _authenticatedUser.id);
 
-      _products.add(product);
-      // _selProductIndex = null;
-      notifyListeners();
-    });
+    _isLoading = false;
+    _products.add(product);
+    // _selProductIndex = null;
+    notifyListeners();
   }
 
   Future<Null> updateProduct(
-      String title, String description, String image, double price) {
+      String title, String description, String image, double price) async {
     _isLoading = true;
     notifyListeners();
 
-    final Map<String, dynamic> updatedProductData = {
-      'title': title,
-      'description': description,
-      'image':
-          'https://image.shutterstock.com/image-photo/milk-chocolate-pieces-isolated-on-260nw-728366752.jpg',
-      'price': price,
-      'userEmail': _authenticatedUser.email,
-      'userId': _authenticatedUser.id
-    };
+    EasyListApiService easyListApiService = new EasyListApiService();
+    final ProductModel product = await easyListApiService.updateProduct(
+        title,
+        description,
+        image,
+        price,
+        _authenticatedUser.email,
+        _authenticatedUser.id,
+        selectedProduct.id,
+        selectedProduct.isFavorite);
 
-    return http
-        .put(
-            'https://flutter-products-1683f.firebaseio.com/products/${selectedProduct.id}.json',
-            body: json.encode(updatedProductData))
-        .then((http.Response response) {
-      _isLoading = false;
-
-      final ProductModel product = ProductModel(
-          id: selectedProduct.id,
-          title: title,
-          description: description,
-          image: image,
-          price: price,
-          userEmail: _authenticatedUser.email,
-          userId: _authenticatedUser.id,
-          isFavorite: selectedProduct.isFavorite);
-
-      _products[selectedProductIndex] = product;
-      //_selProductIndex = null;
-      notifyListeners();
-    });
+    _isLoading = false;
+    _products[selectedProductIndex] = product;
+    //_selProductIndex = null;
+    notifyListeners();
   }
 
-  void deleteProduct() {
+  Future<Null> deleteProduct() async {
     final productId = selectedProduct.id;
     _products.removeAt(selectedProductIndex);
     _selProductId = null;
 
-    http
-        .delete(
-            'https://flutter-products-1683f.firebaseio.com/products/${productId}.json')
-        .then((http.Response response) {
-      notifyListeners();
-    });
+    EasyListApiService easyListApiService = new EasyListApiService();
+    await easyListApiService.deleteProduct(productId);
+    notifyListeners();
   }
 
   void selectProduct(String productId) {
@@ -199,6 +145,10 @@ mixin ProductScopedModel on ConnectedUserProductScopedModel {
     if (productId != null) {
       notifyListeners();
     }
+  }
+
+  void resetSelectedProductId() {
+    _selProductId = null;
   }
 
   void toggleShowFavorites() {
