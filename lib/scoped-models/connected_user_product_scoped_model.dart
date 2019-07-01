@@ -4,7 +4,9 @@ import '../models/user_model.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/easy_list_api_service.dart';
+import '../models/auth.dart';
 
 mixin ConnectedUserProductScopedModel on Model {
   List<ProductModel> _products = [];
@@ -82,7 +84,7 @@ mixin ProductScopedModel on ConnectedUserProductScopedModel {
 
     EasyListApiService easyListApiService = new EasyListApiService();
 
-    _products = await easyListApiService.fetchProducts();
+    _products = await easyListApiService.fetchProducts(_authenticatedUser);
     _isLoading = false;
     notifyListeners();
   }
@@ -100,7 +102,8 @@ mixin ProductScopedModel on ConnectedUserProductScopedModel {
         image,
         price,
         _authenticatedUser.email,
-        _authenticatedUser.id);
+        _authenticatedUser.id,
+        _authenticatedUser);
 
     _isLoading = false;
     _products.add(product);
@@ -122,7 +125,8 @@ mixin ProductScopedModel on ConnectedUserProductScopedModel {
         _authenticatedUser.email,
         _authenticatedUser.id,
         selectedProduct.id,
-        selectedProduct.isFavorite);
+        selectedProduct.isFavorite,
+        _authenticatedUser);
 
     _isLoading = false;
     _products[selectedProductIndex] = product;
@@ -136,7 +140,7 @@ mixin ProductScopedModel on ConnectedUserProductScopedModel {
     _selProductId = null;
 
     EasyListApiService easyListApiService = new EasyListApiService();
-    await easyListApiService.deleteProduct(productId);
+    await easyListApiService.deleteProduct(productId, _authenticatedUser);
     notifyListeners();
   }
 
@@ -162,8 +166,70 @@ mixin ProductScopedModel on ConnectedUserProductScopedModel {
 }
 
 mixin UserScopedModel on ConnectedUserProductScopedModel {
-  void login(String email, String password) {
-    _authenticatedUser =
-        UserModel(id: 'abcd', email: email, password: password);
+  UserModel get user {
+    return _authenticatedUser;
+  }
+
+  Future<Map<String, dynamic>> authenticate(String email, String password,
+      [AuthMode mode = AuthMode.Login]) async {
+    _isLoading = true;
+    notifyListeners();
+    final Map<String, dynamic> authData = {
+      'email': email,
+      'password': password,
+      'returnSecureToken': true
+    };
+
+    http.Response response;
+    if (mode == AuthMode.Login) {
+      response = await http.post(
+        'https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyCEUbNQw77DRKxzTE7GzMRYP5cglkfT0nQ',
+        body: json.encode(authData),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } else {
+      response = await http.post(
+          'https://www.googleapis.com/identitytoolkit/v3/relyingparty/signupNewUser?key=AIzaSyCEUbNQw77DRKxzTE7GzMRYP5cglkfT0nQ',
+          body: json.encode(authData),
+          headers: {'Content-Type': 'application/json'});
+    }
+
+    final Map<String, dynamic> responseData = json.decode(response.body);
+    bool hasError = true;
+    String message = 'Something went wrong.';
+    print(responseData);
+    if (responseData.containsKey('idToken')) {
+      hasError = false;
+      message = 'Authentication succeeded!';
+      _authenticatedUser = UserModel(
+          id: responseData['localId'],
+          email: email,
+          token: responseData['idToken']);
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setString('token', responseData['idToken']);
+      prefs.setString('userEmail', email);
+      prefs.setString('userId', responseData['localId']);
+    } else if (responseData['error']['message'] == 'EMAIL_EXISTS') {
+      message = 'This email already exists.';
+    } else if (responseData['error']['message'] == 'EMAIL_NOT_FOUND') {
+      message = 'This email was not found.';
+    } else if (responseData['error']['message'] == 'INVALID_PASSWORD') {
+      message = 'The password is invalid.';
+    }
+    _isLoading = false;
+    notifyListeners();
+    return {'success': !hasError, 'message': message};
+  }
+
+  void autoAuthenticate() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String token = prefs.getString('token');
+    if (token != null) {
+      final String userEmail = prefs.getString('userEmail');
+      final String userId = prefs.getString('userId');
+      _authenticatedUser =
+          UserModel(id: userId, email: userEmail, token: token);
+      notifyListeners();
+    }
   }
 }

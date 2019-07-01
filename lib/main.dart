@@ -25,11 +25,18 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final MainScopedModel _mainScopedModel = MainScopedModel();
+
+  @override
+  void initState() {
+    _mainScopedModel.autoAuthenticate();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final MainScopedModel mainScopedModel  = MainScopedModel();
     return ScopedModel<MainScopedModel>(
-      model: mainScopedModel,
+      model: _mainScopedModel,
       child: MaterialApp(
         // debugShowMaterialGrid: true,
         theme: ThemeData(
@@ -39,9 +46,17 @@ class _MyAppState extends State<MyApp> {
             buttonColor: Colors.deepPurple),
         // home: AuthPage(),
         routes: {
-          '/': (BuildContext context) => AuthPage(),
-          '/products': (BuildContext context) => HomePage(mainScopedModel),
-          '/admin': (BuildContext context) => ProductsAdminPage(mainScopedModel),
+          '/': (BuildContext context) => ScopedModelDescendant(
+                builder: (BuildContext context, Widget child,
+                    MainScopedModel model) {
+                  return model.user == null
+                      ? AuthPage()
+                      : HomePage(_mainScopedModel);
+                },
+              ),
+          '/products': (BuildContext context) => HomePage(_mainScopedModel),
+          '/admin': (BuildContext context) =>
+              ProductsAdminPage(_mainScopedModel),
         },
         onGenerateRoute: (RouteSettings settings) {
           final List<String> pathElements = settings.name.split('/');
@@ -50,17 +65,16 @@ class _MyAppState extends State<MyApp> {
           }
           if (pathElements[1] == 'product') {
             final String productId = pathElements[2];
-            mainScopedModel.selectProduct(productId);
+            _mainScopedModel.selectProduct(productId);
             return MaterialPageRoute<bool>(
-              builder: (BuildContext context) =>
-                  ProductPage(),
+              builder: (BuildContext context) => ProductPage(),
             );
           }
           return null;
         },
         onUnknownRoute: (RouteSettings settings) {
           return MaterialPageRoute(
-              builder: (BuildContext context) => HomePage(mainScopedModel));
+              builder: (BuildContext context) => HomePage(_mainScopedModel));
         },
       ),
     );
