@@ -26,11 +26,17 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final MainScopedModel _mainScopedModel = MainScopedModel();
+  bool _isAuthenticated = false;
 
   @override
   void initState() {
     _mainScopedModel.autoAuthenticate();
     super.initState();
+    _mainScopedModel.userSubject.listen((bool isAuthenticated) {
+      setState(() {
+        _isAuthenticated = isAuthenticated;
+      });
+    });
   }
 
   @override
@@ -46,19 +52,19 @@ class _MyAppState extends State<MyApp> {
             buttonColor: Colors.deepPurple),
         // home: AuthPage(),
         routes: {
-          '/': (BuildContext context) => ScopedModelDescendant(
-                builder: (BuildContext context, Widget child,
-                    MainScopedModel model) {
-                  return model.user == null
-                      ? AuthPage()
-                      : HomePage(_mainScopedModel);
-                },
-              ),
-          '/products': (BuildContext context) => HomePage(_mainScopedModel),
-          '/admin': (BuildContext context) =>
-              ProductsAdminPage(_mainScopedModel),
+          '/': (BuildContext context) =>
+              !_isAuthenticated ? AuthPage() : HomePage(_mainScopedModel),
+          '/admin': (BuildContext context) => !_isAuthenticated
+              ? AuthPage()
+              : ProductsAdminPage(_mainScopedModel),
         },
         onGenerateRoute: (RouteSettings settings) {
+          if (!_isAuthenticated) {
+            return MaterialPageRoute<bool>(
+              builder: (BuildContext context) => AuthPage(),
+            );
+          }
+
           final List<String> pathElements = settings.name.split('/');
           if (pathElements[0] != '') {
             return null;
@@ -67,14 +73,16 @@ class _MyAppState extends State<MyApp> {
             final String productId = pathElements[2];
             _mainScopedModel.selectProduct(productId);
             return MaterialPageRoute<bool>(
-              builder: (BuildContext context) => ProductPage(),
+              builder: (BuildContext context) =>
+                  !_isAuthenticated ? AuthPage() : ProductPage(),
             );
           }
           return null;
         },
         onUnknownRoute: (RouteSettings settings) {
           return MaterialPageRoute(
-              builder: (BuildContext context) => HomePage(_mainScopedModel));
+              builder: (BuildContext context) =>
+                  !_isAuthenticated ? AuthPage() : HomePage(_mainScopedModel));
         },
       ),
     );

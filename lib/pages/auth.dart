@@ -95,39 +95,6 @@ class _AuthPageState extends State<AuthPage> {
     );
   }
 
-  /*void _submitForm(Function authenticate) async {
-    if (!_formKey.currentState.validate() || !_acceptTerms) {
-      return;
-    }
-    _formKey.currentState.save();
-
-    Map<String, dynamic> successInfo;
-
-    if (_authMode == AuthMode.Login) {
-    } else{
-      if (successInfo["success"]) {
-        Navigator.pushReplacementNamed(context, '/products');
-      } else {
-        showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('An Error Occurred!'),
-                content: Text(successInfo['message']),
-                actions: <Widget>[
-                  FlatButton(
-                    child: Text('Okay'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  )
-                ],
-              );
-            });
-      }
-    }
-  }*/
-
   void _submitForm(Function authenticate) async {
     if (!_formKey.currentState.validate() || !_acceptTerms) {
       return;
@@ -136,7 +103,7 @@ class _AuthPageState extends State<AuthPage> {
     Map<String, dynamic> successInformation =
         await authenticate(_email, _password, _authMode);
     if (successInformation['success']) {
-      Navigator.pushReplacementNamed(context, '/products');
+      //Navigator.pushReplacementNamed(context, '/');
     } else {
       showDialog(
         context: context,

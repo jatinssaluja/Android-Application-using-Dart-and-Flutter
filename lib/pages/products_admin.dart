@@ -4,14 +4,13 @@ import './product_edit.dart';
 import './product_list.dart';
 import '../models/product_model.dart';
 import '../scoped-models/main_scoped_model.dart';
+import '../widgets/ui_elements/logout_list_tile.dart';
 
 class ProductsAdminPage extends StatelessWidget {
-
   final MainScopedModel mainScopedModel;
 
   ProductsAdminPage(this.mainScopedModel);
 
-  
   Widget _buildSideDrawer(BuildContext context) {
     return Drawer(
       child: Column(
@@ -24,9 +23,11 @@ class ProductsAdminPage extends StatelessWidget {
             leading: Icon(Icons.shop),
             title: Text('All Products'),
             onTap: () {
-              Navigator.pushReplacementNamed(context, '/products');
+              Navigator.pushReplacementNamed(context, '/');
             },
-          )
+          ),
+          Divider(),
+          LogoutListTile()
         ],
       ),
     );
@@ -54,7 +55,10 @@ class ProductsAdminPage extends StatelessWidget {
           ),
         ),
         body: TabBarView(
-          children: <Widget>[ProductEditPage(), ProductListPage(mainScopedModel)],
+          children: <Widget>[
+            ProductEditPage(),
+            ProductListPage(mainScopedModel)
+          ],
         ),
       ),
     );
