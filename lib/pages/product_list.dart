@@ -5,8 +5,7 @@ import 'package:scoped_model/scoped_model.dart';
 import './product_edit.dart';
 import '../scoped-models/main_scoped_model.dart';
 
-class ProductListPage extends StatefulWidget{
-
+class ProductListPage extends StatefulWidget {
   final MainScopedModel mainScopedModel;
 
   ProductListPage(this.mainScopedModel);
@@ -19,14 +18,11 @@ class ProductListPage extends StatefulWidget{
 }
 
 class _ProductListPageState extends State<ProductListPage> {
-
   @override
-  initState(){
-    widget.mainScopedModel.fetchProducts();
+  initState() {
+    widget.mainScopedModel.fetchProducts(true);
     super.initState();
   }
-
-
 
   Widget _buildEditButton(
       BuildContext context, int index, MainScopedModel model) {
@@ -40,7 +36,7 @@ class _ProductListPageState extends State<ProductListPage> {
               return ProductEditPage();
             },
           ),
-        ).then((_)=>model.selectProduct(null));
+        ).then((_) => model.selectProduct(null));
       },
     );
   }
@@ -68,7 +64,8 @@ class _ProductListPageState extends State<ProductListPage> {
                 children: <Widget>[
                   ListTile(
                     leading: CircleAvatar(
-                      backgroundImage: NetworkImage(model.allProducts[index].image),
+                      backgroundImage:
+                          NetworkImage(model.allProducts[index].image),
                     ),
                     title: Text(model.allProducts[index].title),
                     subtitle:

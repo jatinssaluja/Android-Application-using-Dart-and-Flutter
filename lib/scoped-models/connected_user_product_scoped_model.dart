@@ -103,13 +103,14 @@ mixin ProductScopedModel on ConnectedUserProductScopedModel {
     _selProductId = null;
   }
 
-  Future<Null> fetchProducts() async {
+  Future<Null> fetchProducts([onlyForUser = false]) async {
     _isLoading = true;
     notifyListeners();
 
     EasyListApiService easyListApiService = new EasyListApiService();
 
-    _products = await easyListApiService.fetchProducts(_authenticatedUser);
+    _products =
+        await easyListApiService.fetchProducts(_authenticatedUser, onlyForUser);
     _isLoading = false;
     notifyListeners();
   }

@@ -13,11 +13,12 @@ class EasyListApiService {
   }
   EasyListApiService._internal();
 
-  Future<List<ProductModel>> fetchProducts(UserModel authenticatedUser) async {
+  Future<List<ProductModel>> fetchProducts(
+      UserModel authenticatedUser, bool onlyForUser) async {
     final response = await http.get(
         'https://flutter-products-1683f.firebaseio.com/products.json?auth=${authenticatedUser.token}');
     final Map<String, dynamic> productListData = json.decode(response.body);
-    final List<ProductModel> fetchedProductList = [];
+    List<ProductModel> fetchedProductList = [];
 
     if (productListData != null) {
       productListData.forEach((String productId, dynamic productData) {
@@ -37,6 +38,12 @@ class EasyListApiService {
         fetchedProductList.add(productModel);
       });
     }
+
+    fetchedProductList = onlyForUser
+        ? fetchedProductList.where((ProductModel product) {
+            return product.userId == authenticatedUser.id;
+          }).toList()
+        : fetchedProductList;
 
     return fetchedProductList;
   }
