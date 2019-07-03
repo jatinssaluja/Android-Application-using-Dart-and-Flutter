@@ -5,6 +5,7 @@ import 'package:scoped_model/scoped_model.dart';
 import '../widgets/helpers/ensure_visible.dart';
 import '../models/product_model.dart';
 import '../scoped-models/main_scoped_model.dart';
+import '../widgets/form_inputs/image.dart';
 
 class ProductEditPage extends StatefulWidget {
   @override
@@ -29,14 +30,22 @@ class _ProductEditPageState extends State<ProductEditPage> {
   final _titleFocusNode = FocusNode();
   final _descriptionFocusNode = FocusNode();
   final _priceFocusNode = FocusNode();
+  final _titleTextController = TextEditingController();
+  final _descriptionTextController = TextEditingController();
 
   Widget _buildTitleTextField(ProductModel product) {
+    if (product == null && _titleTextController.text.trim() == '') {
+      _titleTextController.text = '';
+    } else if (product != null && _titleTextController.text.trim() == '') {
+      _titleTextController.text = product.title;
+    }
     return EnsureVisibleWhenFocused(
       focusNode: _titleFocusNode,
       child: TextFormField(
         focusNode: _titleFocusNode,
         decoration: InputDecoration(labelText: 'Product Title'),
-        initialValue: product == null ? '' : product.title,
+        controller: _titleTextController,
+        //initialValue: product == null ? '' : product.title,
         validator: (String value) {
           // if (value.trim().length <= 0) {
           if (value.isEmpty || value.length < 5) {
@@ -44,20 +53,27 @@ class _ProductEditPageState extends State<ProductEditPage> {
           }
         },
         onSaved: (String value) {
-          title= value;
+          title = value;
         },
       ),
     );
   }
 
   Widget _buildDescriptionTextField(ProductModel product) {
+    if (product == null && _descriptionTextController.text.trim() == '') {
+      _descriptionTextController.text = '';
+    } else if (product != null &&
+        _descriptionTextController.text.trim() == '') {
+      _descriptionTextController.text = product.description;
+    }
     return EnsureVisibleWhenFocused(
       focusNode: _descriptionFocusNode,
       child: TextFormField(
         focusNode: _descriptionFocusNode,
         maxLines: 4,
         decoration: InputDecoration(labelText: 'Product Description'),
-        initialValue: product == null ? '' : product.description,
+        controller: _descriptionTextController,
+        //initialValue: product == null ? '' : product.description,
         validator: (String value) {
           // if (value.trim().length <= 0) {
           if (value.isEmpty || value.length < 10) {
@@ -96,14 +112,17 @@ class _ProductEditPageState extends State<ProductEditPage> {
   Widget _buildSubmitButton() {
     return ScopedModelDescendant<MainScopedModel>(
       builder: (BuildContext context, Widget child, MainScopedModel model) {
-        return model.isLoading ? Center(
-          child: CircularProgressIndicator()): 
-        RaisedButton(
-          child: Text('Save'),
-          textColor: Colors.white,
-          onPressed: () => _submitForm(model.addProduct, model.updateProduct, model.selectProduct,
-              model.selectedProductIndex),
-        );
+        return model.isLoading
+            ? Center(child: CircularProgressIndicator())
+            : RaisedButton(
+                child: Text('Save'),
+                textColor: Colors.white,
+                onPressed: () => _submitForm(
+                    model.addProduct,
+                    model.updateProduct,
+                    model.selectProduct,
+                    model.selectedProductIndex),
+              );
       },
     );
   }
@@ -129,6 +148,10 @@ class _ProductEditPageState extends State<ProductEditPage> {
               SizedBox(
                 height: 10.0,
               ),
+              ImageInput(),
+              SizedBox(
+                height: 10.0,
+              ),
               _buildSubmitButton(),
               // GestureDetector(
               //   onTap: _submitForm,
@@ -145,29 +168,24 @@ class _ProductEditPageState extends State<ProductEditPage> {
     );
   }
 
-  void _submitForm(Function addProduct, Function updateProduct, Function selectProduct,
+  void _submitForm(
+      Function addProduct, Function updateProduct, Function selectProduct,
       [int selectedProductIndex]) {
     if (!_formKey.currentState.validate()) {
       return;
     }
     _formKey.currentState.save();
     if (selectedProductIndex == -1) {
-      addProduct(title,description,image,price).then((_){
-
+      addProduct(title, description, image, price).then((_) {
         Navigator.pushReplacementNamed(context, '/products')
-        .then((_)=>selectProduct(null));
-
+            .then((_) => selectProduct(null));
       });
     } else {
-      updateProduct(title,description,image,price).then((_){
-
+      updateProduct(title, description, image, price).then((_) {
         Navigator.pushReplacementNamed(context, '/products')
-        .then((_)=>selectProduct(null));
-
+            .then((_) => selectProduct(null));
       });
     }
-
-    
   }
 
   @override
